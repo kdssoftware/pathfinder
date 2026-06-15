@@ -4,7 +4,7 @@ services:
     container_name: pathfinder-app
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:80"
+      - "8089:80"
     volumes:
       - ./conf:/var/www/html/conf
       - ./logs:/var/www/html/logs
