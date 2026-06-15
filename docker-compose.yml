@@ -1,0 +1,63 @@
+services:
+  app:
+    build: .
+    container_name: pathfinder-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./conf:/var/www/html/conf
+      - ./logs:/var/www/html/logs
+      - ./history:/var/www/html/history
+      - ./export:/var/www/html/export
+    depends_on:
+      - db
+      - redis
+    networks:
+      - pathfinder_net
+
+  db:
+    image: mariadb:10.11
+    container_name: pathfinder-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: secure_root_password_here
+      MYSQL_DATABASE: pathfinder
+      MYSQL_USER: pathfinder
+      MYSQL_PASSWORD: secure_pf_password_here
+    volumes:
+      - pathfinder_db_data:/var/lib/mysql
+    networks:
+      - pathfinder_net
+
+  redis:
+    image: redis:7
+    container_name: pathfinder-redis
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - pathfinder_redis_data:/data
+    networks:
+      - pathfinder_net
+
+  cron:
+    build: .
+    container_name: pathfinder-cron
+    restart: unless-stopped
+    command: >
+      bash -c "while true; do su -s /bin/bash -c 'php index.php /cron' www-data; sleep 60; done"
+    volumes:
+      - ./conf:/var/www/html/conf
+      - ./logs:/var/www/html/logs
+    depends_on:
+      - db
+      - redis
+    networks:
+      - pathfinder_net
+
+networks:
+  pathfinder_net:
+
+volumes:
+  pathfinder_db_data:
+  pathfinder_redis_data:
